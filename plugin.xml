@@ -13,7 +13,7 @@
             </feature>
         </config-file>
         <config-file parent="/*" target="AndroidManifest.xml"></config-file>
-        <source-file src="src/android/org/demo/mytoast/MyToast.java" target-dir="src/org/hm8090/cordova"/>
-        <source-file src="src/android/org/demo/mytoast/Version.java" target-dir="src/org/hm8090/cordova"/>
+        <source-file src="src/android/org/hm8090/cordova/SimpleHotCodePush.java" target-dir="src/org/hm8090/cordova"/>
+        <source-file src="src/android/org/hm8090/cordova/Version.java" target-dir="src/org/hm8090/cordova"/>
     </platform>
 </plugin>
