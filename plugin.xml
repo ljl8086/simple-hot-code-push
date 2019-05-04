@@ -6,6 +6,12 @@
         <clobbers target="cordova.plugins.SimpleHotCodePush"/>
     </js-module>
     <platform name="android">
+        <config-file parent="/manifest" target="AndroidManifest.xml" xmlns:android="http://schemas.android.com/apk/res/android">
+            <uses-permission android:name="android.permission.INTERNET"/>
+            <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+            <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
+            <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+        </config-file>
         <config-file parent="/*" target="res/xml/config.xml">
             <feature name="SimpleHotCodePush">
                 <param name="android-package" value="org.hm8090.cordova.SimpleHotCodePush"/>

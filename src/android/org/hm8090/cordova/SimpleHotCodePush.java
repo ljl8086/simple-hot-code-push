@@ -43,8 +43,9 @@ public class SimpleHotCodePush extends CordovaPlugin {
     private Long mTaskId;
     private DownloadManager downloadManager;
     private Context context;
-    private String baseUrl;
     private SharedPreferences pref;
+    private String baseUrl;
+    private String configFile;
 
     @Override
     public boolean execute(String action, JSONArray args, CallbackContext callbackContext) throws JSONException {
@@ -73,6 +74,7 @@ public class SimpleHotCodePush extends CordovaPlugin {
         this.context = webView.getContext();
         this.pref = this.context.getSharedPreferences("data", Context.MODE_PRIVATE);
         this.baseUrl = super.preferences.getString("base_url",null);
+        this.configFile = super.preferences.getString("config_file",null);
     }
 
     @Override
@@ -85,7 +87,7 @@ public class SimpleHotCodePush extends CordovaPlugin {
             new Thread(()->{
                 HttpURLConnection conn = null;
                 try {
-                    URL url = new URL(this.baseUrl + "/version");
+                    URL url = new URL(this.configFile);
 
                     conn = (HttpURLConnection)url.openConnection();
                     int responseCode = conn.getResponseCode();
