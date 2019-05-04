@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<plugin id="org.demo.mytoast" version="0.0.1" xmlns="http://apache.org/cordova/ns/plugins/1.0"
+<plugin id="simple-hot-code-push" version="0.0.1" xmlns="http://apache.org/cordova/ns/plugins/1.0"
         xmlns:android="http://schemas.android.com/apk/res/android">
     <name>SimpleHotCodePush</name>
     <js-module name="SimpleHotCodePush" src="www/simple-hot-code-push.js">
