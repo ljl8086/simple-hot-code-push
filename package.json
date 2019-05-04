@@ -1,0 +1,13 @@
+{
+  "name": "simple-hot-code-push",
+  "version": "1.0.0",
+  "description": "",
+  "cordova": {
+    "id": "simple-hot-code-push",
+    "platforms": [
+      "android"
+    ]
+  },
+  "author": "Sunny",
+  "license": "ISC"
+}

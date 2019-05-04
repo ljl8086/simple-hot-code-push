@@ -1,0 +1,2 @@
+// https://mvnrepository.com/artifact/com.hyty.cordova/CordovaPlugin_Media
+compile group: 'com.hyty.cordova', name: 'CordovaPlugin_Media', version: '2.3.36'

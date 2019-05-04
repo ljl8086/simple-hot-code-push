@@ -1,0 +1,19 @@
+<?xml version='1.0' encoding='utf-8'?>
+<plugin id="org.demo.mytoast" version="0.0.1" xmlns="http://apache.org/cordova/ns/plugins/1.0"
+        xmlns:android="http://schemas.android.com/apk/res/android">
+    <name>SimpleHotCodePush</name>
+    <js-module name="SimpleHotCodePush" src="www/simple-hot-code-push.js">
+        <clobbers target="cordova.plugins.SimpleHotCodePush"/>
+    </js-module>
+    <platform name="android">
+        <config-file parent="/*" target="res/xml/config.xml">
+            <feature name="SimpleHotCodePush">
+                <param name="android-package" value="org.hm8090.cordova.SimpleHotCodePush"/>
+                <param name="onload" value="true"/>
+            </feature>
+        </config-file>
+        <config-file parent="/*" target="AndroidManifest.xml"></config-file>
+        <source-file src="src/android/org/demo/mytoast/MyToast.java" target-dir="src/org/hm8090/cordova"/>
+        <source-file src="src/android/org/demo/mytoast/Version.java" target-dir="src/org/hm8090/cordova"/>
+    </platform>
+</plugin>
