@@ -1,13 +1,30 @@
 {
   "name": "simple-hot-code-push",
   "version": "1.0.0",
-  "description": "",
+  "description": "Cordova hot code push",
   "cordova": {
     "id": "simple-hot-code-push",
     "platforms": [
       "android"
     ]
   },
+  "keywords": [
+    "ecosystem:cordova",
+    "cordova-android",
+    "cordova-ios",
+    "cordova-windows"
+  ],
+  "engines": {
+    "cordovaDependencies": {
+      "3.0.0": {
+        "cordova": ">100"
+      },
+      "0.0.0": {
+        "cordova-android": ">=8.0.0"
+      },
+    }
+  },
+  "homepage": "https://github.com/ljl8086/simple-hot-code-push",
   "author": "Sunny",
-  "license": "ISC"
+  "license": "Apache-2.0"
 }
