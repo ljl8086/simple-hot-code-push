@@ -1,13 +1,17 @@
 package org.hm8090.cordova;
 
+import android.app.AlertDialog;
 import android.app.DownloadManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.pm.PackageInfo;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Environment;
 import android.os.Handler;
 import android.util.Log;
 import android.widget.Toast;
@@ -35,6 +39,8 @@ import java.security.MessageDigest;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import io.ionic.starter.R;
+
 /**
  * 简单热更新组件.
  */
@@ -44,25 +50,49 @@ public class SimpleHotCodePush extends CordovaPlugin {
     private DownloadManager downloadManager;
     private Context context;
     private SharedPreferences pref;
-    private String baseUrl;
     private String configFile;
 
     @Override
     public boolean execute(String action, JSONArray args, CallbackContext callbackContext) throws JSONException {
-        if (action.equals("showToast")) {
-            String message = args.getString(0);
-            this.showToast(message, callbackContext);
-            return true;
+        switch (action){
+            case "getVersion":
+                this.getVersion(callbackContext);
+            case "getRemoteVersion":
+                this.getRemoteVersion(version -> {
+                    callbackContext.success(version.toJSONObject().toString());
+                }, error -> {
+                    callbackContext.error(error);
+                });
+                break;
         }
-        return false;
+        return true;
     }
 
-    private void showToast(String message, CallbackContext callbackContext) {
-        if (message != null && message.length() > 0) {
-            Toast.makeText(this.cordova.getActivity(), message, Toast.LENGTH_SHORT).show();
-            callbackContext.success(message);
-        } else {
-            callbackContext.error("Expected one non-empty string argument.");
+    /**
+     * 获取app版本号。
+     * @param callbackContext
+     */
+    private void getVersion(CallbackContext callbackContext) {
+        try {
+            int nativeVersion = getNativeVersion();
+            long version = getCurrentVersion();
+            JSONObject object = new JSONObject();
+            object.put("nativeVersion", nativeVersion);
+            object.put("version", version);
+            callbackContext.success(object);
+        }catch (Exception e) {
+            e.printStackTrace();
+            log("版本号获取失败");
+            callbackContext.error("获取版本号失败");
+        }
+    }
+
+    private int getNativeVersion() {
+        try {
+            PackageInfo info = context.getApplicationContext().getPackageManager().getPackageInfo(context.getPackageName(), 0);
+            return info.versionCode;
+        }catch (Exception e) {
+            return 0;
         }
     }
 
@@ -73,7 +103,6 @@ public class SimpleHotCodePush extends CordovaPlugin {
         downloadManager = (DownloadManager)webView.getContext().getSystemService(Context.DOWNLOAD_SERVICE);
         this.context = webView.getContext();
         this.pref = this.context.getSharedPreferences("data", Context.MODE_PRIVATE);
-        this.baseUrl = super.preferences.getString("base_url",null);
         this.configFile = super.preferences.getString("config_file",null);
     }
 
@@ -84,63 +113,168 @@ public class SimpleHotCodePush extends CordovaPlugin {
         setServerBasePath(getBaseDir(null));
 
         try {
-            new Thread(()->{
-                HttpURLConnection conn = null;
-                try {
-                    URL url = new URL(this.configFile);
-
-                    conn = (HttpURLConnection)url.openConnection();
-                    int responseCode = conn.getResponseCode();
-                    if(responseCode==200) {
-                        String response = getStringFromInputStream(conn.getInputStream());
-                        Version version = json2Entity(response);
-
-                        if( version.getVersion() > getCurrentVersion() ) {
-                            log("有新版本更新");
-                            this.show("发现新版本，正在更新中……", 3);
-
-                            if (version.getAssertTarget()==null || version.getAssertTarget().trim().length()==0) return;
-
-                            DownloadManager.Request request = new DownloadManager.Request(Uri.parse(this.baseUrl+"/"+ version.getAssertTarget()));
-                            request.setDestinationInExternalFilesDir(context,null, version.getAssertTarget());
-                            mTaskId = downloadManager.enqueue(request);
-
-                            context.registerReceiver(new BroadcastReceiver() {
-                                @Override
-                                public void onReceive(Context context, Intent intent) {
-                                    checkDownloadStatus(version);
-                                }
-                            }, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
-                        }else {
-                            log("已经是最新版本，无需更新");
-                        }
-
+            getRemoteVersion( version -> {
+                if (version.getNativeInterface() > getNativeVersion()) {
+                    if(version.getNativeTarget()!=null && version.getNativeTarget().length()>0) {
+                        handler.post(()->{
+                            AlertDialog.Builder normalDialog = new AlertDialog.Builder(context);
+                            normalDialog.setTitle("更新").setMessage("发现新版本，是否现在更新?");
+                            normalDialog.setNegativeButton("取消", ((dialog, which) -> {
+                                dialog.cancel();
+                            }));
+                            normalDialog.setPositiveButton("立即更新", (dialog,which) -> {
+                                updateNativeApp(version.getNativeTarget());
+                                dialog.dismiss();
+                            });
+                            normalDialog.show();
+                        });
+                    }else {
+                        log("app下载地址有问题");
                     }
-                }catch (Exception e) {
-                    e.printStackTrace();
-                    log(e.getMessage());
-                }finally {
-                    if(conn!=null) conn.disconnect();
+                    return;
                 }
-            }).start();
+
+                if (version.getVersion() > getCurrentVersion()) {
+                    updateAssert(version);
+                }
+
+            }, error->{
+                log(error);
+            });
 
         }catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    private Version json2Entity(String jsonStr) throws JSONException {
-        JSONObject json = new JSONObject(jsonStr);
+    /**
+     * 异步获取远程版本号
+     * @param success
+     * @param error
+     */
+    private void getRemoteVersion(Event<Version> success, Event<String> error) {
+        new Thread(()->{
+            HttpURLConnection conn = null;
+            try {
+                URL url = new URL(this.configFile);
 
-        Version version = new Version();
-        version.setVersion(json.getLong("version"));
-        version.setNativeInterface(json.optLong("native_interface"));
-        version.setUpdate(json.optString("update"));
-        version.setAssertTarget(json.optString("assert_target"));
-        version.setAssertTargetMd5(json.optString("assert_target_md5"));
-        version.setNativeTarget("native_target");
-        version.setNativeTargetMd5("native_target_md5");
-        return version;
+                conn = (HttpURLConnection)url.openConnection();
+                int responseCode = conn.getResponseCode();
+                if(responseCode==200) {
+                    String response = getStringFromInputStream(conn.getInputStream());
+                    Version version = Version.fromString(response);
+                    success.callback(version);
+                }
+            }catch (Exception e) {
+                e.printStackTrace();
+                error.callback(e.getMessage());
+            }finally {
+                if(conn!=null) conn.disconnect();
+            }
+        }).start();
+    }
+
+
+    /**
+     * 更新H5代码
+     * @param version
+     */
+    private void updateAssert(Version version) {
+        if( version.getVersion() > getCurrentVersion() ) {
+            log("有新版本更新");
+            this.show("发现新版本，正在更新中……", 3);
+
+            if (version.getAssertTarget()==null || version.getAssertTarget().trim().length()==0) return;
+            String fileName = version.getAssertTarget().substring(version.getAssertTarget().lastIndexOf("/") + 1);
+
+            DownloadManager.Request request = new DownloadManager.Request(Uri.parse(version.getAssertTarget()));
+            request.setDestinationInExternalFilesDir(context,null, fileName);
+            mTaskId = downloadManager.enqueue(request);
+
+            context.registerReceiver(new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    DownloadManager.Query query = new DownloadManager.Query();
+                    query.setFilterById(mTaskId);
+                    Cursor c = downloadManager.query(query);
+                    if (c.moveToFirst()) {
+                        int status = c.getInt(c.getColumnIndex(DownloadManager.COLUMN_STATUS));
+                        switch (status) {
+                            case DownloadManager.STATUS_SUCCESSFUL:
+                                String uri = c.getString(c.getColumnIndex(DownloadManager.COLUMN_LOCAL_URI));
+                                log(">>>下载完成"+uri);
+
+                                File downloadFile = new File(Uri.parse(uri).getPath());
+                                String fileMd5 = getFileMD5(downloadFile);
+                                String sourceFileMd5 = version.getAssertTargetMd5();
+                                if (fileMd5.equalsIgnoreCase(sourceFileMd5)){
+                                    log("下载成功，准备更新");
+                                    try {
+                                        String desDir = getBaseDir(version.getVersion());
+                                        unzip(downloadFile, desDir);
+                                        saveVersion(version.getVersion());
+                                        setServerBasePath(desDir);
+                                        show("新版本更新成功", 5);
+                                    }catch (Exception e) {
+                                        e.printStackTrace();
+                                        log("解压更新文件错误");
+                                        show("新版本更新失败，请联系客服", 5);
+                                    }
+                                }else {
+                                    log("文件下载错误，原始MD5[%s],下载文件MD5[%S]",sourceFileMd5, fileMd5);
+                                    show("新版本更新失败，请联系客服", 5);
+                                }
+                                break;
+                            case DownloadManager.STATUS_FAILED:
+                                log(">>>下载失败");
+                                show("新版本下载失败，下次启动时将重新更新", 5);
+                                break;
+                        }
+                    }
+                }
+            }, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
+        }else {
+            log("已经是最新版本，无需更新");
+        }
+    }
+
+    /**
+     * 更新APP
+     * @param url
+     */
+    private void updateNativeApp(String url) {
+        DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
+        String fileName = url.substring(url.lastIndexOf("/") + 1);
+        request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName);
+        request.setTitle("下载");
+        request.setDescription("正在下载");
+        request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+        long requestId = downloadManager.enqueue(request);
+
+        context.registerReceiver(new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                DownloadManager.Query query = new DownloadManager.Query();
+                query.setFilterById(requestId);
+                Cursor c = downloadManager.query(query);
+                if (c.moveToFirst()) {
+                    int status = c.getInt(c.getColumnIndex(DownloadManager.COLUMN_STATUS));
+                    switch (status) {
+                        case DownloadManager.STATUS_SUCCESSFUL:
+                            String uri = c.getString(c.getColumnIndex(DownloadManager.COLUMN_LOCAL_URI));
+                            log(">>>下载完成" + uri);
+
+                            intent = new Intent(Intent.ACTION_VIEW);
+                            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                            intent.setDataAndType(Uri.parse(uri), "application/vnd.android.package-archive");
+                            context.startActivity(intent);
+                            break;
+                    }
+                }
+            }
+        }, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
+
+        return;
     }
 
     private Long getCurrentVersion() {
@@ -175,53 +309,6 @@ public class SimpleHotCodePush extends CordovaPlugin {
             return www.toString();
         }else {
             return null;
-        }
-    }
-
-    private void checkDownloadStatus(Version version) {
-        DownloadManager.Query query = new DownloadManager.Query();
-        query.setFilterById(mTaskId);//筛选下载任务，传入任务ID，可变参数
-        Cursor c = downloadManager.query(query);
-        if (c.moveToFirst()) {
-            int status = c.getInt(c.getColumnIndex(DownloadManager.COLUMN_STATUS));
-            switch (status) {
-                case DownloadManager.STATUS_PAUSED:
-                    log(">>>下载暂停");
-                case DownloadManager.STATUS_PENDING:
-                    log(">>>下载延迟");
-                case DownloadManager.STATUS_RUNNING:
-                    log(">>>正在下载");
-                    break;
-                case DownloadManager.STATUS_SUCCESSFUL:
-                    String uri = c.getString(c.getColumnIndex(DownloadManager.COLUMN_LOCAL_URI));
-                    log(">>>下载完成"+uri);
-
-                    File downloadFile = new File(Uri.parse(uri).getPath());
-                    String fileMd5 = getFileMD5(downloadFile);
-                    String sourceFileMd5 = version.getAssertTargetMd5();
-                    if (fileMd5.equalsIgnoreCase(sourceFileMd5)){
-                        log("下载成功，准备更新");
-                        try {
-                            String desDir = getBaseDir(version.getVersion());
-                            unzip(downloadFile, desDir);
-                            saveVersion(version.getVersion());
-                            setServerBasePath(desDir);
-                            this.show("新版本更新成功", 5);
-                        }catch (Exception e) {
-                            e.printStackTrace();
-                            log("解压更新文件错误");
-                            this.show("新版本更新失败，请联系客服", 5);
-                        }
-                    }else {
-                        log("文件下载错误，原始MD5[%s],下载文件MD5[%S]",sourceFileMd5, fileMd5);
-                        this.show("新版本更新失败，请联系客服", 5);
-                    }
-                    break;
-                case DownloadManager.STATUS_FAILED:
-                    log(">>>下载失败");
-                    this.show("新版本下载失败，下次启动时将重新更新", 5);
-                    break;
-            }
         }
     }
 

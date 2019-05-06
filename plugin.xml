@@ -11,6 +11,7 @@
             <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
             <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
             <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+            <uses-permission android:name="android.permission.DOWNLOAD_WITHOUT_NOTIFICATION"/>
         </config-file>
         <config-file parent="/*" target="res/xml/config.xml">
             <feature name="SimpleHotCodePush">
@@ -21,5 +22,6 @@
         <config-file parent="/*" target="AndroidManifest.xml"></config-file>
         <source-file src="src/android/org/hm8090/cordova/SimpleHotCodePush.java" target-dir="src/org/hm8090/cordova"/>
         <source-file src="src/android/org/hm8090/cordova/Version.java" target-dir="src/org/hm8090/cordova"/>
+        <source-file src="src/android/org/hm8090/cordova/Event.java" target-dir="src/org/hm8090/cordova"/>
     </platform>
 </plugin>
