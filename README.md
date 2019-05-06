@@ -10,14 +10,14 @@
   <preference name="config_file" value="http://x.x.x.x/version" />
 ```
 ## 版本控制请求url，返回内容如下
-```xml
+```json
   {
   "version": 6,
   "native_interface": 2,
   "update": "now",
   "assert_target":"target.zip",
   "assert_target_md5": "da21ea445cbf283e126ca2aab7cf5bb2",
-  "native_target":"http://192.168.0.219/test3.apk",
+  "native_target":"http://xxx.xxx.xxx/xxx.apk",
   "native_target_md5":""
   }
 ```
