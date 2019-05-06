@@ -21,7 +21,7 @@
       },
       "0.0.0": {
         "cordova-android": ">=8.0.0"
-      },
+      }
     }
   },
   "homepage": "https://github.com/ljl8086/simple-hot-code-push",
