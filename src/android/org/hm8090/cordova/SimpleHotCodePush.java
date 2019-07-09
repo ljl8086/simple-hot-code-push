@@ -39,7 +39,6 @@ import java.security.MessageDigest;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-import io.ionic.starter.R;
 
 /**
  * 简单热更新组件.
