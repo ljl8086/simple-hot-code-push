@@ -302,7 +302,7 @@ public class SimpleHotCodePush extends CordovaPlugin {
 
     private String getBaseDir(Long ver) {
         Long temp = ver==null ? getCurrentVersion() : ver;
-        if (temp!=null) {
+        if (temp!=null && temp>0) {
             File www = new File(webView.getContext().getExternalFilesDir(null) + "/www_"+temp);
             if(!www.exists()) www.mkdirs();
             return www.toString();
