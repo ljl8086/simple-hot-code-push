@@ -104,7 +104,7 @@ public class SimpleHotCodePush extends CordovaPlugin {
         this.context = webView.getContext();
         this.pref = this.context.getSharedPreferences("data", Context.MODE_PRIVATE);
         this.configFile = super.preferences.getString("config_file",null);
-	this.defaultUrl = super.preferences.getString("default_url",null);
+	    this.defaultUrl = super.preferences.getString("default_url",null);
     }
 
     @Override
@@ -187,10 +187,10 @@ public class SimpleHotCodePush extends CordovaPlugin {
 
             if (version.getAssertTarget()==null || version.getAssertTarget().trim().length()==0) return;
             String fileName = version.getAssertTarget().substring(version.getAssertTarget().lastIndexOf("/") + 1);
-	    String downloadUrl = version.getAssertTarget();
-	    if (!downloadUrl.startsWith("http://") && !downloadUrl.startsWith("https://"))) {
-		downloadUrl = this.defaultUrl + "/" + version.getAssertTarget();
-	    }
+            String downloadUrl = version.getAssertTarget();
+            if (!downloadUrl.startsWith("http://") && !downloadUrl.startsWith("https://")) {
+                downloadUrl = this.defaultUrl + "/" + version.getAssertTarget();
+            }
 
             DownloadManager.Request request = new DownloadManager.Request(Uri.parse(downloadUrl));
             request.setDestinationInExternalFilesDir(context,null, fileName);

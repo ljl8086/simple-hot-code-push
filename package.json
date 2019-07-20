@@ -1,6 +1,6 @@
 {
   "name": "simple-hot-code-push",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Cordova hot code push",
   "cordova": {
     "id": "simple-hot-code-push",
