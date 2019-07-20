@@ -51,6 +51,8 @@ public class SimpleHotCodePush extends CordovaPlugin {
     private SharedPreferences pref;
     private String configFile;
     private String defaultUrl;
+    // 初始资源版本号
+    private int version = 0;
 
     @Override
     public boolean execute(String action, JSONArray args, CallbackContext callbackContext) throws JSONException {
@@ -105,6 +107,7 @@ public class SimpleHotCodePush extends CordovaPlugin {
         this.pref = this.context.getSharedPreferences("data", Context.MODE_PRIVATE);
         this.configFile = super.preferences.getString("config_file",null);
 	    this.defaultUrl = super.preferences.getString("default_url",null);
+	    this.version = super.preferences.getInt("version", 0);
     }
 
     @Override
@@ -283,7 +286,7 @@ public class SimpleHotCodePush extends CordovaPlugin {
     }
 
     private Long getCurrentVersion() {
-        return this.pref.getLong("version",0);
+        return this.pref.getLong("version", this.version);
     }
 
     private void saveVersion(Long version) {
