@@ -107,7 +107,7 @@ public class SimpleHotCodePush extends CordovaPlugin {
         this.pref = this.context.getSharedPreferences("data", Context.MODE_PRIVATE);
         this.configFile = super.preferences.getString("config_file",null);
 	    this.defaultUrl = super.preferences.getString("default_url",null);
-	    this.version = super.preferences.getInt("version", 0);
+	    this.version = super.preferences.getInteger("version", 0);
     }
 
     @Override
