@@ -407,7 +407,6 @@ public class SimpleHotCodePush extends CordovaPlugin {
                         }
                         dest.flush();
                         dest.close();
-                        zin.close();
                     }
                 }
             } finally {
