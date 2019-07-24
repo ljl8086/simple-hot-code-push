@@ -106,15 +106,17 @@ public class SimpleHotCodePush extends CordovaPlugin {
         this.context = webView.getContext();
         this.pref = this.context.getSharedPreferences("data", Context.MODE_PRIVATE);
         this.configFile = super.preferences.getString("config_file",null);
-	    this.defaultUrl = super.preferences.getString("default_url",null);
-	    this.version = super.preferences.getInteger("version", 0);
+        this.defaultUrl = super.preferences.getString("default_url",null);
+        this.version = super.preferences.getInteger("version", 0);
     }
 
     @Override
     public void onStart() {
         super.onStart();
         webView.handleStop();
-        setServerBasePath(getBaseDir(null));
+
+        File index = getBaseDirIndex(getCurrentVersion());
+        setServerBasePath(index.getParent());
 
         try {
             getRemoteVersion( version -> {
@@ -218,10 +220,10 @@ public class SimpleHotCodePush extends CordovaPlugin {
                                 if (fileMd5.equalsIgnoreCase(sourceFileMd5)){
                                     log("下载成功，准备更新");
                                     try {
-                                        String desDir = getBaseDir(version.getVersion());
-                                        unzip(downloadFile, desDir);
+                                        File desDir = getBaseDirIndex(version.getVersion());
+                                        unzip(downloadFile, desDir.getParent());
                                         saveVersion(version.getVersion());
-                                        setServerBasePath(desDir);
+                                        setServerBasePath(desDir.getParent());
                                         show("新版本更新成功", 5);
                                     }catch (Exception e) {
                                         e.printStackTrace();
@@ -309,22 +311,23 @@ public class SimpleHotCodePush extends CordovaPlugin {
     }
 
 
-    private String getBaseDir(Long ver) {
-        Long temp = ver==null ? getCurrentVersion() : ver;
-        if (temp!=null && temp>0) {
-            File www = new File(webView.getContext().getExternalFilesDir(null) + "/www_"+temp);
-            if(!www.exists()) www.mkdirs();
-            return www.toString();
-        }else {
-            return null;
-        }
+    private File getBaseDirIndex(Long ver) {
+        return new File(webView.getContext().getExternalFilesDir(null) + "/www_" + ver + "/index.html");
     }
 
     private void setServerBasePath(String url) {
-        log("导航到此目录：%s", url);
         if (url!=null && url.trim().length()>0) {
             IonicWebViewEngine engine = (IonicWebViewEngine) webView.getEngine();
-            engine.setServerBasePath(url);
+            if ( url.startsWith("https://") || url.startsWith("http://") || url.startsWith("file://")){
+                log("导航到此目录：%s", url);
+                engine.setServerBasePath(url);
+            } else {
+                File file = new File(url+"/index.html");
+                if (file.exists()){
+                    log("导航到此目录：%s", url);
+                    engine.setServerBasePath(url);
+                }
+            }
         }
     }
 
