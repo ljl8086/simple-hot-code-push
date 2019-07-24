@@ -4,7 +4,6 @@ import android.app.AlertDialog;
 import android.app.DownloadManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
@@ -27,6 +26,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -377,6 +377,7 @@ public class SimpleHotCodePush extends CordovaPlugin {
     }
 
     private void unzip(File zipFile, String location) throws IOException {
+        int BUFFER = 10240;
         try {
             File f = new File(location);
             if (!f.isDirectory()) {
@@ -394,16 +395,16 @@ public class SimpleHotCodePush extends CordovaPlugin {
                             unzipFile.mkdirs();
                         }
                     } else {
-                        FileOutputStream fout = new FileOutputStream(path, false);
-
-                        try {
-                            for (int c = zin.read(); c != -1; c = zin.read()) {
-                                fout.write(c);
-                            }
-                            zin.closeEntry();
-                        } finally {
-                            fout.close();
+                        byte data[] = new byte[BUFFER];
+                        FileOutputStream fos = new FileOutputStream(path);
+                        BufferedOutputStream dest = new BufferedOutputStream(fos, BUFFER);
+                        int currentByte;
+                        while ((currentByte = zin.read(data, 0, BUFFER)) != -1) {
+                            dest.write(data, 0, currentByte);
                         }
+                        dest.flush();
+                        dest.close();
+                        zin.close();
                     }
                 }
             } finally {
