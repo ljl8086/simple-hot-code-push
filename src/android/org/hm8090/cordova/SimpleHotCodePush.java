@@ -224,7 +224,7 @@ public class SimpleHotCodePush extends CordovaPlugin {
                                         unzip(downloadFile, desDir.getParent());
                                         saveVersion(version.getVersion());
                                         setServerBasePath(desDir.getParent());
-                                        show("新版本更新成功", 5);
+                                        show("新版本更新成功，请关闭后重新打开", 5);
                                     }catch (Exception e) {
                                         e.printStackTrace();
                                         log("解压更新文件错误");
